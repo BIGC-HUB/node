@@ -1,33 +1,30 @@
 const log = (...args) => { console.log.apply(console, args) }
 const fs = require('fs')
-
+const Ku = require('./ku.js')
+const User = Ku.User
+const Message = Ku.Message
 // 引入 Model 模块
 // 因为暴露出来的模块就是包含了 Model 的对象
 // 所以分别将这个对象的属性提取出来赋值给相应的 model
-const models = require('./models.js')
-const User = models.User
-const Message = models.Message
+
 
 // 使用一个全局变量来保存 session 信息
 // session 可以在服务器端实现过期功能, 上课会讲
 const session = {}
-// const 嘟嘟嘟 = {}
-
-// user=dewfd7vd3uom6skw
-// user=uvbmsn6e6bfdjag6
-
+// 随机密钥
 const randomStr = () => {
-    const seed = 'asdfghjokpwefdsui3456789dfghjk67wsdcfvgbnmkcvb2e'
-    let s = ''
-    for (let i = 0; i < 16; i++) {
+    const seed = 'zx#wmz/ywj&hx(ty*hyl-zhy$xjr!lyl>'
+    const long = 16
+    let str = ''
+    for (let i = 0; i < long; i++) {
         const random = Math.random() * (seed.length - 2)
         const index = Math.floor(random)
-        s += seed[index]
+        str += seed[index]
     }
-    return s
+    return str
 }
 
-const currentUser = (request) => {
+const nowUser = (request) => {
     const id = request.cookies.user || ''
     const username = session[id] || '游客'
     return username
@@ -36,7 +33,7 @@ const currentUser = (request) => {
 // 读取 html 文件的函数
 // 这样我们可以把页面的内容写入到 html 文件中, 专注处理逻辑
 const template = (name) => {
-    const path = 'templates/' + name
+    const path = 'html/' + name
     const options = {
         encoding: 'utf8'
     }
@@ -70,7 +67,7 @@ const index = (request) => {
     }
     const header = headerFromMapper(headers)
     let body = template('index.html')
-    const username = currentUser(request)
+    const username = nowUser(request)
     body = body.replace('{{username}}', username)
     const r = header + '\r\n' + body
     return r
@@ -107,7 +104,7 @@ const login = (request) => {
     } else {
         result = ''
     }
-    const username = currentUser(request)
+    const username = nowUser(request)
     let body = template('login.html')
     // 使用{{label}} 在页面里做一个记号, 直接替换掉这部分内容
     // 这里的 {{}} 是自己约定的, 完全可以换成其他的形式, 比如 <<>>, >_<result>_<
@@ -170,10 +167,10 @@ const message = (request) => {
 }
 
 // 图片的响应函数, 读取图片并生成响应返回
-const static = (request) => {
+const img = (request) => {
     // 静态资源的处理, 读取图片并生成相应返回
     const filename = request.query.file || 'doge.gif'
-    const path = `static/${filename}`
+    const path = `img/${filename}`
     const body = fs.readFileSync(path)
     const header = headerFromMapper()
 
@@ -188,7 +185,7 @@ const profile = (request) => {
     }
     const header = headerFromMapper(headers)
     let body = template('profile.html')
-    const username = currentUser(request)
+    const username = nowUser(request)
     const u = User.find('username', username)[0]
     if (u) {
         body = body.replace('{{node}}', u.node)
@@ -206,7 +203,7 @@ const profile = (request) => {
 // 把 route 放在一起, 然后暴露出去
 const routeMapper = {
     '/': index,
-    '/static': static,
+    '/img': img,
     '/login': login,
     '/register': register,
     '/message': message,

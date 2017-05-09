@@ -1,5 +1,6 @@
 const log = (...args) => { console.log.apply(console, args) }
 class Request {
+    // 构建
     constructor() {
         this.raw = ''
         this.method = 'GET'

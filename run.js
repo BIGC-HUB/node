@@ -2,10 +2,9 @@ const log = (...args) => { console.log.apply(console, args) }
 const net = require('net')
 const fs = require('fs')
 
-// 引入封装之后的 request
-const Request = require('./request')
-const routeMapper = require('./routes')
-const log = require('./utils')
+// 引入封装之后的 req
+const Request = require('./req')
+const Routes = require('./routes')
 
 const error = (code=404) => {
     const e = {
@@ -66,7 +65,7 @@ Accept-Language: zh-CN,zh;q=0.8,en-US;q=0.5,en;q=0.3
 Accept-Encoding: gzip, deflate
 Cookie: user=vn7hawwfsjkjc7fk; a=b
 Connection: keep-alive
-Upgrade-Insecure-Requests: 1
+Upgrade-Insecure-reqs: 1
 
  */
 const parsedRaw = (raw) => {
@@ -89,23 +88,23 @@ const parsedRaw = (raw) => {
     }
 }
 
-const responseFor = (raw, request) => {
+const responseFor = (raw, req) => {
     const r = parsedRaw(raw)
-    request.method = r.method
-    request.path = r.path
-    request.query = r.query
-    request.body = r.body
-    request.addHeaders(r.headers)
+    req.method = r.method
+    req.path = r.path
+    req.query = r.query
+    req.body = r.body
+    req.addHeaders(r.headers)
     // log('path and query', r.path, r.query)
     // 定义一个基本的 route, 是一个空 object
     const route = {}
-    // 然后将引入进来的 routeMapper 与 route 合并
+    // 然后将引入进来的 routes 与 route 合并
     // Object.assign 的作用是合并多个(这里是 2 个) object, 然后将合并后的 object 返回
-    const routes = Object.assign(route, routeMapper)
+    const routes = Object.assign(route, Routes)
     // 获取 response 函数
     const response = routes[r.path] || error
-    // 将 request 作为 response 的参数传出去, 这样每一个 response 都可以与对应的 request 挂钩
-    const resp = response(request)
+    // 将 req 作为 response 的参数传出去, 这样每一个 response 都可以与对应的 req 挂钩
+    const resp = response(req)
     return resp
 }
 
@@ -127,22 +126,22 @@ const run = (host='', port=3000) => {
         s.on('data', (data) => {
             // log('debug server', server, s)
             // 这里的处理方式和之前有些不同
-            // 每次触发 data 事件后, 都生成一个 request 实例,
+            // 每次触发 data 事件后, 都生成一个 req 实例,
             // 然后整个请求 - 响应过程中使用的都是这个实例,
-            // 相当于 request 在这个过程中是一个全局变量,
-            // 不管什么时候都可以方便地获取 request 里的数据
-            const request = new Request()
+            // 相当于 req 在这个过程中是一个全局变量,
+            // 不管什么时候都可以方便地获取 req 里的数据
+            const req = new Request()
             // data 是 buffer 类型, 使用 toString 把 data 转成 utf8 编码的字符串
             // 现在 r 是一个符合 http 请求格式的字符串
             const r = data.toString('utf8')
-            // 使用 request.raw 保存请求的原始信息
-            // request.raw = r
+            // 使用 req.raw 保存请求的原始信息
+            // req.raw = r
             const ip = s.localAddress
-            // log(`ip and request, ${ip}\n${r}`)
+            // log(`ip and req, ${ip}\n${r}`)
 
-            // 然后调用 responseFor, 根据 request 生成响应内容
+            // 然后调用 responseFor, 根据 req 生成响应内容
             // 因为除了 path, 还有 method, query, body 都会影响 response 的内容
-            const response = responseFor(r, request)
+            const response = responseFor(r, req)
 
             // 将 response 发送给客户端, 这里的客户端就是浏览器
             // socket.write 可以接收 buffer 类型的参数
